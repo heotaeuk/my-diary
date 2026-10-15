@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TEN MINUTE PLANNER</title>
+<meta name="theme-color" content="#3d5a80">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <style>
   :root {
     --bg: #f3f2ef;
@@ -27,6 +31,12 @@
     --faint: #c9c6bf;
     --todo-dot: #f08a4b;
     --grid: #e9e7e1;
+    /* 기분 색: 나쁨(빨강) ↔ 보통(회색) ↔ 좋음(파랑) 양방향 척도 */
+    --mood1: #c93d3d;
+    --mood2: #f0a3a2;
+    --mood3: #d6d4ce;
+    --mood4: #86b6ef;
+    --mood5: #256abf;
     color-scheme: light;
   }
   /* 다크 모드: 눈부심을 줄이도록 순검정 대신 어두운 회색 계열 사용 */
@@ -52,6 +62,11 @@
     --faint: #55534f;
     --todo-dot: #d68152;
     --grid: #2c2d32;
+    --mood1: #e66767;
+    --mood2: #93393a;
+    --mood3: #4a4a46;
+    --mood4: #245a9e;
+    --mood5: #5f9be6;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -644,6 +659,192 @@
   .tooltip .muted { color: #aaa; }
   .tooltip .sep { border-top: 1px solid #444; margin-top: 6px; padding-top: 6px; color: #ddd; }
 
+  /* 반복 할 일 */
+  .add-form .repeat-pick { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 12px; color: var(--sub); }
+  .day-tog {
+    min-width: 28px;
+    height: 24px;
+    padding: 0 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--field);
+    color: var(--sub);
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .day-tog[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .day-tog:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #list li .repeat {
+    flex: none;
+    padding: 1px 7px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    font-size: 11px;
+    color: var(--sub);
+    white-space: nowrap;
+  }
+
+  /* 사진 */
+  .photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .photos[hidden], .menu button[hidden] { display: none; }
+  .photo-thumb, .photo-add {
+    width: 64px;
+    height: 64px;
+    padding: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .photo-thumb { border: 1px solid var(--line); background: var(--field); }
+  .photo-thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .photo-thumb:focus-visible, .photo-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .photo-add { border: 1px dashed var(--line-strong); background: var(--field); color: var(--sub); font-size: 12px; }
+  .photo-add:hover { border-color: var(--accent); color: var(--ink); }
+
+  /* 대화상자 (회고, 사진 크게 보기) */
+  .dlg {
+    width: min(960px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    padding: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    background: var(--paper);
+    color: var(--ink);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  }
+  .dlg::backdrop { background: rgba(0,0,0,0.45); }
+  .dlg-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    background: var(--paper);
+  }
+  .dlg-head h2 { margin: 0 8px 0 0; font-size: 16px; }
+  .dlg-head .close { margin-left: auto; }
+  .dlg-body { padding: 16px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+  .tab {
+    padding: 5px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--sub);
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .tab[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .rv-nav { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; font-weight: 700; }
+  .rv-section { margin-top: 20px; }
+
+  /* 연간 픽셀 */
+  .year-wrap { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .pixels { display: grid; grid-template-columns: 20px repeat(12, minmax(0, 1fr)); gap: 2px; }
+  .px-h { font-size: 10px; line-height: 12px; color: var(--sub); text-align: center; font-variant-numeric: tabular-nums; }
+  .px {
+    height: 12px;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line);
+    cursor: pointer;
+  }
+  .px[data-m] { box-shadow: none; }
+  .px[data-m="1"], .mood-legend i[data-m="1"], .dist-bar[data-m="1"] { background: var(--mood1); }
+  .px[data-m="2"], .mood-legend i[data-m="2"], .dist-bar[data-m="2"] { background: var(--mood2); }
+  .px[data-m="3"], .mood-legend i[data-m="3"], .dist-bar[data-m="3"] { background: var(--mood3); }
+  .px[data-m="4"], .mood-legend i[data-m="4"], .dist-bar[data-m="4"] { background: var(--mood4); }
+  .px[data-m="5"], .mood-legend i[data-m="5"], .dist-bar[data-m="5"] { background: var(--mood5); }
+  .px.void { visibility: hidden; cursor: default; }
+  .px.is-today { outline: 2px solid var(--ink); outline-offset: 0; }
+  .px:hover:not(.void), .px:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .mood-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 12px; font-size: 12px; color: var(--sub); }
+  .mood-legend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 4px;
+    border-radius: 3px;
+    vertical-align: -1px;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .mood-legend i[data-m] { box-shadow: none; }
+
+  /* 통계 타일 · 표 · 분포 막대 */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .tile { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; }
+  .tile .k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; color: var(--sub); }
+  .tile .v { margin-top: 2px; font-size: 22px; font-weight: 800; }
+  .tile .s { font-size: 12px; color: var(--sub); }
+  .rv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .rv-table th, .rv-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+  .rv-table th { font-size: 11px; font-weight: 700; color: var(--sub); }
+  .rv-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .rv-table tbody tr { cursor: pointer; }
+  .rv-table tbody tr:hover { background: var(--accent-soft); }
+  .table-scroll { overflow-x: auto; }
+  .dist { display: grid; grid-template-columns: auto minmax(0, 1fr) 3em; gap: 6px 10px; align-items: center; font-size: 13px; }
+  .dist-track { height: 12px; }
+  .dist-bar { height: 100%; min-width: 2px; border-radius: 0 4px 4px 0; }
+  .dist .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--sub); }
+  .rv-q { display: grid; gap: 10px; }
+  .rv-q label { display: grid; gap: 4px; font-size: 12px; font-weight: 700; color: var(--sub); }
+  .rv-q textarea { min-height: 64px; resize: vertical; font-weight: 400; color: var(--ink); line-height: 1.5; }
+
+  /* 사진 크게 보기 */
+  .photo-dlg { width: min(720px, calc(100vw - 32px)); }
+  .photo-dlg img { display: block; max-width: 100%; max-height: calc(100vh - 160px); margin: 0 auto; border-radius: 6px; }
+
+  /* PIN 잠금 화면 */
+  #lockScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    place-items: center;
+    padding: 16px;
+    background: var(--bg);
+  }
+  html.locked #lockScreen, #lockScreen.show { display: grid; }
+  html.locked body > :not(#lockScreen) { visibility: hidden; }
+  html.locked body { overflow: hidden; }
+  .lock-card {
+    width: min(320px, 100%);
+    padding: 24px 20px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--paper);
+    text-align: center;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+  }
+  .lock-card h2 { margin: 6px 0 4px; font-size: 17px; }
+  .lock-card .lock-sub { margin: 0; font-size: 13px; color: var(--sub); }
+  .pin-dots { display: flex; justify-content: center; gap: 12px; margin: 18px 0 8px; }
+  .pin-dots i { width: 14px; height: 14px; border: 2px solid var(--line-strong); border-radius: 50%; }
+  .pin-dots i.on { background: var(--accent); border-color: var(--accent); }
+  .pin-dots.shake { animation: shake .3s; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .lock-msg { min-height: 20px; margin: 0 0 10px; font-size: 13px; color: var(--red); }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .key {
+    height: 50px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--field);
+    color: var(--ink);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .key:hover { background: var(--accent-soft); }
+  .key:disabled { opacity: 0.4; cursor: default; }
+  .lock-foot { display: flex; justify-content: space-between; margin-top: 14px; }
+
   /* 좁은 화면에서는 플래너를 먼저 보여줌 */
   @media (max-width: 1080px) {
     .layout { grid-template-columns: 1fr; }
@@ -657,6 +858,8 @@
     .paper-body { grid-template-columns: 1fr; }
     .col + .col { border-left: none; border-top: 1px solid var(--line); }
     .add-form .btn { flex: 1 1 100%; }
+    .year-wrap { grid-template-columns: 1fr; }
+    .dlg-body { padding: 12px; }
   }
 </style>
 <script>
@@ -665,6 +868,8 @@
     const saved = localStorage.getItem('planner_theme');
     const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
     if (dark) document.documentElement.dataset.theme = 'dark';
+    // PIN 잠금이 켜져 있으면 내용이 보이기 전에 가림
+    if (localStorage.getItem('planner_lock')) document.documentElement.classList.add('locked');
   })();
 </script>
 </head>
@@ -678,11 +883,15 @@
         <span class="theme-label" id="themeLabel"></span>
       </button>
       <button class="btn" id="todayBtn">오늘로 이동</button>
+      <button class="btn" id="reviewBtn" type="button">회고</button>
       <div class="menu-wrap">
-        <button class="btn" id="backupBtn" type="button" aria-haspopup="true" aria-expanded="false">백업</button>
-        <div class="menu" id="backupMenu">
+        <button class="btn" id="settingsBtn" type="button" aria-haspopup="true" aria-expanded="false">설정</button>
+        <div class="menu" id="settingsMenu">
           <button type="button" id="exportBtn">백업 파일 내보내기</button>
           <button type="button" id="importBtn">백업 파일 가져오기</button>
+          <button type="button" id="lockSetBtn">PIN 잠금 설정</button>
+          <button type="button" id="lockNowBtn" hidden>지금 잠그기</button>
+          <button type="button" id="lockOffBtn" hidden>PIN 잠금 끄기</button>
         </div>
         <input type="file" id="importFile" accept="application/json,.json" hidden>
       </div>
@@ -761,7 +970,18 @@
               <button type="button" class="swatch" data-cat="4" style="background:var(--c4)" title="색 4"></button>
               <button type="button" class="swatch" data-cat="5" style="background:var(--c5)" title="색 5"></button>
             </div>
-            <input class="field date-in" type="date" id="dateInput" title="할 일 날짜">
+            <div class="repeat-pick" id="repeatPick" role="group" aria-label="반복 요일 (고르면 반복 할 일로 추가)">
+              반복
+              <button type="button" class="day-tog" data-all aria-pressed="false" title="매일 반복">매일</button>
+              <button type="button" class="day-tog" data-day="1" aria-pressed="false">월</button>
+              <button type="button" class="day-tog" data-day="2" aria-pressed="false">화</button>
+              <button type="button" class="day-tog" data-day="3" aria-pressed="false">수</button>
+              <button type="button" class="day-tog" data-day="4" aria-pressed="false">목</button>
+              <button type="button" class="day-tog" data-day="5" aria-pressed="false">금</button>
+              <button type="button" class="day-tog" data-day="6" aria-pressed="false">토</button>
+              <button type="button" class="day-tog" data-day="0" aria-pressed="false">일</button>
+            </div>
+            <input class="field date-in" type="date" id="dateInput" title="할 일 날짜 (반복 할 일은 시작일)">
             <label class="due-wrap" title="마감일 (선택)">마감<input class="field date-in" type="date" id="dueInput"></label>
             <button class="btn primary" type="submit">추가</button>
           </form>
@@ -779,6 +999,10 @@
             <span class="label">DIARY</span>
           </div>
           <textarea class="memo" id="diary" placeholder="오늘 있었던 일을 남겨보세요"></textarea>
+          <div class="photos" id="photos" hidden>
+            <button type="button" class="photo-add" id="photoAdd" title="사진 추가 (하루 최대 6장)">+ 사진</button>
+          </div>
+          <input type="file" id="photoFile" accept="image/*" multiple hidden>
           <button type="button" class="ago" id="agoCard" hidden></button>
         </div>
 
@@ -806,6 +1030,52 @@
   <div class="tooltip" id="tooltip"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastText"></span><button type="button" id="undoBtn">되돌리기</button></div>
 
+  <!-- 회고: 연간 픽셀 · 주간 · 월간 -->
+  <dialog class="dlg" id="reviewDlg" aria-labelledby="reviewTitle">
+    <div class="dlg-head">
+      <h2 id="reviewTitle">회고</h2>
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab" role="tab" data-tab="year" aria-selected="true">연간 기분</button>
+        <button type="button" class="tab" role="tab" data-tab="week" aria-selected="false">주간 회고</button>
+        <button type="button" class="tab" role="tab" data-tab="month" aria-selected="false">월간 회고</button>
+      </div>
+      <button type="button" class="btn close" id="reviewClose">닫기</button>
+    </div>
+    <div class="dlg-body" id="reviewBody"></div>
+    <div class="tooltip" id="pxTip"></div>
+  </dialog>
+
+  <!-- 사진 크게 보기 -->
+  <dialog class="dlg photo-dlg" id="photoDlg" aria-label="사진 보기">
+    <div class="dlg-head">
+      <h2 id="photoTitle">사진</h2>
+      <button type="button" class="btn" id="photoDelete">삭제</button>
+      <button type="button" class="btn close" id="photoClose">닫기</button>
+    </div>
+    <div class="dlg-body"><img id="photoBig" alt=""></div>
+  </dialog>
+
+  <!-- PIN 잠금 화면 (잠금 해제 · PIN 설정 · 끄기 확인에 같이 사용) -->
+  <div id="lockScreen" role="dialog" aria-modal="true" aria-labelledby="lockTitle">
+    <div class="lock-card">
+      <div aria-hidden="true" style="font-size:28px">🔒</div>
+      <h2 id="lockTitle">PIN을 입력하세요</h2>
+      <p class="lock-sub" id="lockSub">TEN MINUTE PLANNER</p>
+      <div class="pin-dots" id="pinDots" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <p class="lock-msg" id="lockMsg" role="alert"></p>
+      <div class="keypad" id="keypad">
+        <button type="button" class="key">1</button><button type="button" class="key">2</button><button type="button" class="key">3</button>
+        <button type="button" class="key">4</button><button type="button" class="key">5</button><button type="button" class="key">6</button>
+        <button type="button" class="key">7</button><button type="button" class="key">8</button><button type="button" class="key">9</button>
+        <span></span><button type="button" class="key">0</button><button type="button" class="key" data-back aria-label="지우기">⌫</button>
+      </div>
+      <div class="lock-foot">
+        <button type="button" class="link-btn" id="lockForgot">PIN을 잊었어요</button>
+        <button type="button" class="link-btn" id="lockCancel" hidden>취소</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const KEYS = {
     todos: 'todos',
@@ -814,6 +1084,9 @@
     dday: 'planner_dday',
     plannerSeeded: 'planner_seeded',
     theme: 'planner_theme',
+    routines: 'planner_routines',
+    reviews: 'planner_reviews',
+    lock: 'planner_lock',
   };
   const SLOTS = 144; // 24시간 × 6칸(10분)
   const START_HOUR = 6;
@@ -827,7 +1100,10 @@
     { v: 1, emoji: '😢', label: '나쁨' },
   ];
   const moodEmoji = v => (MOODS.find(m => m.v === v) || {}).emoji || '';
+  const moodLabel = v => (MOODS.find(m => m.v === v) || {}).label || '';
   const BACKUP_APP = 'ten-minute-planner';
+  const BACKUP_VERSION = 2; // 2: 사진 포함
+  const MAX_PHOTOS = 6; // 하루 최대 사진 수
 
   const $ = id => document.getElementById(id);
   const form = $('form');
@@ -888,9 +1164,19 @@
   let todos = loadJSON(KEYS.todos, []).map(t => ({ ...t, date: t.date || todayKey }));
   let days = loadJSON(KEYS.days, {});
   let dday = loadJSON(KEYS.dday, null);
+  // 반복 할 일: { id, text, days: [요일 0~6], start, end?, cat?, done: { 날짜: true } }
+  let routines = loadJSON(KEYS.routines, []);
+  // 회고: { 'W2026-10-12': {...}, 'M2026-10': {...} } → { good, bad, next }
+  let reviews = loadJSON(KEYS.reviews, {});
 
   function saveTodos() {
     localStorage.setItem(KEYS.todos, JSON.stringify(todos));
+  }
+  function saveRoutines() {
+    localStorage.setItem(KEYS.routines, JSON.stringify(routines));
+  }
+  function saveReviews() {
+    localStorage.setItem(KEYS.reviews, JSON.stringify(reviews));
   }
   function saveDays() {
     // 비어 있는 날은 저장하지 않음
@@ -918,6 +1204,26 @@
   }
   function todosOn(key) {
     return todos.filter(t => t.date === key);
+  }
+  // 그날 해당하는 반복 할 일 (시작일 이후, 끝난 날 이전, 요일 일치)
+  function routinesOn(key) {
+    const dow = fromKey(key).getDay();
+    return routines.filter(r => key >= r.start && (!r.end || key <= r.end) && r.days.includes(dow));
+  }
+  // 달력 점 · 툴팁 · 통계용: 할 일과 반복 할 일을 같은 모양으로
+  function itemsOn(key) {
+    return [
+      ...todosOn(key).map(t => ({ text: t.text, done: t.done, cat: t.cat })),
+      ...routinesOn(key).map(r => ({ text: r.text, done: Boolean(r.done[key]), cat: r.cat, routine: true })),
+    ];
+  }
+  // 요일 목록 → '매일' / '평일' / '주말' / '월·수·금'
+  function repeatLabel(dayList) {
+    const s = [...dayList].sort().join('');
+    if (s === '0123456') return '매일';
+    if (s === '12345') return '평일';
+    if (s === '06') return '주말';
+    return [1, 2, 3, 4, 5, 6, 0].filter(d => dayList.includes(d)).map(d => WEEKDAYS[d]).join('·');
   }
   // 일기나 메모를 쓴 날인지
   function hasWriting(key) {
@@ -972,6 +1278,15 @@
         todos.push({ id: base + i, text, done, date: shiftKey(todayKey, offset) });
       });
       saveTodos();
+      // 반복 할 일 예시
+      routines.push({
+        id: base + 100,
+        text: '물 2L 마시기',
+        days: [0, 1, 2, 3, 4, 5, 6],
+        start: shiftKey(todayKey, -3),
+        done: { [shiftKey(todayKey, -2)]: true, [shiftKey(todayKey, -1)]: true },
+      });
+      saveRoutines();
       localStorage.setItem(KEYS.todosSeeded, '1');
     }
 
@@ -1107,11 +1422,92 @@
     $('ddayClear').style.display = dday ? '' : 'none';
   }
 
+  // 카테고리 색 점: 누를 때마다 없음 → 1 → … → 5 → 없음
+  function makeCatDot(item, save) {
+    const cat = document.createElement('button');
+    cat.type = 'button';
+    cat.className = 'cat';
+    if (item.cat) cat.dataset.c = item.cat;
+    cat.title = '카테고리 색 (눌러서 변경)';
+    cat.setAttribute('aria-label', '카테고리 색 변경');
+    cat.addEventListener('click', () => {
+      const next = ((item.cat || 0) + 1) % 6;
+      if (next) item.cat = next;
+      else delete item.cat;
+      save();
+      render();
+    });
+    return cat;
+  }
+
+  // 반복 할 일 한 줄
+  function routineRow(r) {
+    const key = selectedKey;
+    const done = Boolean(r.done[key]);
+    const li = document.createElement('li');
+    li.classList.add('routine');
+    if (done) li.classList.add('done');
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = done;
+    checkbox.setAttribute('aria-label', '완료');
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) r.done[key] = true;
+      else delete r.done[key];
+      saveRoutines();
+      render();
+    });
+
+    const span = document.createElement('span');
+    span.className = 'text';
+    span.textContent = r.text;
+    span.title = '더블클릭하여 수정 (모든 날에 적용)';
+    span.addEventListener('dblclick', () => startEdit(span, r, saveRoutines));
+
+    const badge = document.createElement('span');
+    badge.className = 'repeat';
+    badge.textContent = `↻ ${repeatLabel(r.days)}`;
+    badge.title = `반복 할 일 · ${formatKey(r.start)}부터`;
+
+    // 삭제: 이 날부터 그만하기 (지난 기록은 남김). 시작일이면 통째로 삭제
+    const del = document.createElement('button');
+    del.className = 'del';
+    del.textContent = '×';
+    del.title = '이 날부터 반복 그만하기';
+    del.addEventListener('click', () => {
+      if (key > r.start) {
+        const prevEnd = r.end;
+        r.end = shiftKey(key, -1);
+        saveRoutines();
+        render();
+        showUndo('이 날부터 반복을 그만뒀어요', () => {
+          if (prevEnd) r.end = prevEnd;
+          else delete r.end;
+          saveRoutines();
+        });
+      } else {
+        const idx = routines.indexOf(r);
+        routines.splice(idx, 1);
+        saveRoutines();
+        render();
+        showUndo('반복 할 일을 삭제했어요', () => {
+          routines.splice(Math.min(idx, routines.length), 0, r);
+          saveRoutines();
+        });
+      }
+    });
+
+    li.append(makeCatDot(r, saveRoutines), checkbox, span, badge, del);
+    return li;
+  }
+
   function renderList() {
     list.innerHTML = '';
     const items = todosOn(selectedKey);
+    const reps = routinesOn(selectedKey);
 
-    if (items.length === 0) {
+    if (items.length + reps.length === 0) {
       const li = document.createElement('li');
       li.className = 'empty';
       li.textContent = '이 날짜에 할 일이 없어요. 아래에서 추가해 보세요.';
@@ -1152,21 +1548,6 @@
         });
       });
 
-      // 카테고리 색 점: 누를 때마다 없음 → 1 → … → 5 → 없음
-      const cat = document.createElement('button');
-      cat.type = 'button';
-      cat.className = 'cat';
-      if (todo.cat) cat.dataset.c = todo.cat;
-      cat.title = '카테고리 색 (눌러서 변경)';
-      cat.setAttribute('aria-label', '카테고리 색 변경');
-      cat.addEventListener('click', () => {
-        const next = ((todo.cat || 0) + 1) % 6;
-        if (next) todo.cat = next;
-        else delete todo.cat;
-        saveTodos();
-        render();
-      });
-
       // 마감 표시: 누르면 마감일 수정, 마감일이 없으면 마우스를 올렸을 때 '+ 마감' 버튼
       const due = document.createElement('button');
       due.type = 'button';
@@ -1186,21 +1567,24 @@
       }
       due.addEventListener('click', () => startDueEdit(due, todo));
 
-      li.append(cat, checkbox, span, due, del);
+      li.append(makeCatDot(todo, saveTodos), checkbox, span, due, del);
       list.appendChild(li);
     });
+    reps.forEach(r => list.appendChild(routineRow(r)));
 
-    const done = items.filter(t => t.done).length;
-    const pct = items.length ? Math.round((done / items.length) * 100) : 0;
+    // 달성률은 할 일 + 반복 할 일
+    const all = itemsOn(selectedKey);
+    const done = all.filter(t => t.done).length;
+    const pct = all.length ? Math.round((done / all.length) * 100) : 0;
     $('progressText').innerHTML = '';
-    $('progressText').append(`${done}/${items.length} 완료 · `);
+    $('progressText').append(`${done}/${all.length} 완료 · `);
     const b = document.createElement('b');
     b.textContent = `${pct}%`;
     $('progressText').append(b);
     $('progressBar').style.width = pct + '%';
   }
 
-  function startEdit(span, todo) {
+  function startEdit(span, todo, save = saveTodos) {
     const edit = document.createElement('input');
     edit.className = 'field edit';
     edit.value = todo.text;
@@ -1214,7 +1598,7 @@
       const v = edit.value.trim();
       if (commit && v) {
         todo.text = v;
-        saveTodos();
+        save();
       }
       render();
     };
@@ -1288,7 +1672,7 @@
       num.textContent = d;
       const dots = document.createElement('div');
       dots.className = 'dots';
-      todosOn(key).slice(0, 4).forEach(t => {
+      itemsOn(key).slice(0, 4).forEach(t => {
         const dot = document.createElement('i');
         if (t.cat) dot.dataset.c = t.cat;
         if (t.done) dot.className = 'done';
@@ -1362,6 +1746,7 @@
     hideTooltip();
     renderDayFields();
     render();
+    renderPhotos();
   }
 
   // ---------- 툴팁 ----------
@@ -1371,7 +1756,7 @@
     title.textContent = `${formatKey(key)} ${moodEmoji(dayData(key).mood)}`.trim();
     tooltip.appendChild(title);
 
-    const items = todosOn(key);
+    const items = itemsOn(key);
     if (items.length === 0) {
       const none = document.createElement('div');
       none.className = 'muted';
@@ -1380,7 +1765,7 @@
     } else {
       items.forEach(t => {
         const row = document.createElement('div');
-        row.textContent = (t.done ? '✔ ' : '• ') + t.text;
+        row.textContent = (t.done ? '✔ ' : '• ') + t.text + (t.routine ? ' ↻' : '');
         if (t.done) row.className = 'done';
         tooltip.appendChild(row);
       });
@@ -1413,8 +1798,10 @@
   // ---------- 되돌리기 토스트 ----------
   let undoTimer = null;
   let undoAction = null;
+  // restore가 없으면 되돌리기 버튼 없이 알림만
   function showUndo(message, restore) {
     $('toastText').textContent = message;
+    $('undoBtn').hidden = !restore;
     $('toast').classList.add('show');
     undoAction = restore;
     clearTimeout(undoTimer);
@@ -1433,65 +1820,144 @@
     render();
   });
 
+  // ---------- 사진 저장소 (IndexedDB) ----------
+  // 사진은 용량이 커서 localStorage 대신 IndexedDB에 { id, date, data(JPEG dataURL), createdAt }로 저장
+  const PHOTO_DB = 'ten-minute-planner';
+  let photoDbPromise = null;
+  function photoDb() {
+    if (!photoDbPromise) {
+      photoDbPromise = new Promise((resolve, reject) => {
+        if (!window.indexedDB) return reject(new Error('no indexedDB'));
+        const req = indexedDB.open(PHOTO_DB, 1);
+        req.onupgradeneeded = () => {
+          const store = req.result.createObjectStore('photos', { keyPath: 'id' });
+          store.createIndex('date', 'date');
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    return photoDbPromise;
+  }
+  // 저장소 작업 하나를 Promise로 (mode: 'readonly' | 'readwrite')
+  async function photoStore(mode, fn) {
+    const db = await photoDb();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('photos', mode);
+      const req = fn(tx.objectStore('photos'));
+      tx.oncomplete = () => resolve(req && req.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  const photosOn = key => photoStore('readonly', s => s.index('date').getAll(key));
+  const allPhotos = () => photoStore('readonly', s => s.getAll());
+  const putPhoto = rec => photoStore('readwrite', s => s.put(rec));
+  const deletePhoto = id => photoStore('readwrite', s => s.delete(id));
+  const clearPhotos = () => photoStore('readwrite', s => s.clear());
+
+  // 긴 변을 1280px로 줄이고 JPEG로 압축
+  async function compressImage(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = reject;
+        el.src = url;
+      });
+      const scale = Math.min(1, 1280 / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      return canvas.toDataURL('image/jpeg', 0.82);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
   // ---------- 백업 내보내기 / 가져오기 ----------
-  function backupPayload() {
+  async function backupPayload() {
     const data = {};
     Object.values(KEYS).forEach(k => {
       const v = localStorage.getItem(k);
       if (v !== null) data[k] = v;
     });
-    return { app: BACKUP_APP, version: 1, exportedAt: new Date().toISOString(), data };
+    let photos = [];
+    try {
+      photos = await allPhotos();
+    } catch {
+      photos = [];
+    }
+    return { app: BACKUP_APP, version: BACKUP_VERSION, exportedAt: new Date().toISOString(), data, photos };
   }
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
   function isValidBackup(obj) {
     const allowed = Object.values(KEYS);
     if (!obj || obj.app !== BACKUP_APP || !obj.data || typeof obj.data !== 'object') return false;
     if (!Object.entries(obj.data).every(([k, v]) => allowed.includes(k) && typeof v === 'string')) return false;
+    const isObject = v => v && typeof v === 'object' && !Array.isArray(v);
     try {
       if (obj.data[KEYS.todos] && !Array.isArray(JSON.parse(obj.data[KEYS.todos]))) return false;
-      const d = obj.data[KEYS.days] && JSON.parse(obj.data[KEYS.days]);
-      if (obj.data[KEYS.days] && (!d || typeof d !== 'object' || Array.isArray(d))) return false;
+      if (obj.data[KEYS.routines] && !Array.isArray(JSON.parse(obj.data[KEYS.routines]))) return false;
+      if (obj.data[KEYS.days] && !isObject(JSON.parse(obj.data[KEYS.days]))) return false;
+      if (obj.data[KEYS.reviews] && !isObject(JSON.parse(obj.data[KEYS.reviews]))) return false;
+      if (obj.data[KEYS.lock] && !isObject(JSON.parse(obj.data[KEYS.lock]))) return false;
       if (obj.data[KEYS.dday]) JSON.parse(obj.data[KEYS.dday]);
     } catch {
       return false;
     }
+    // 버전 1 백업에는 사진이 없음
+    if (obj.photos !== undefined) {
+      if (!Array.isArray(obj.photos)) return false;
+      const okPhoto = p => isObject(p) && p.id !== undefined && DATE_RE.test(p.date)
+        && typeof p.data === 'string' && p.data.startsWith('data:image/');
+      if (!obj.photos.every(okPhoto)) return false;
+    }
     return true;
   }
   // 검사를 통과한 백업으로 지금 데이터를 통째로 바꿈
-  function restoreBackup(obj) {
+  async function restoreBackup(obj) {
     Object.values(KEYS).forEach(k => localStorage.removeItem(k));
     Object.entries(obj.data).forEach(([k, v]) => localStorage.setItem(k, v));
     // 가져온 뒤 샘플 데이터가 다시 들어가지 않도록
     localStorage.setItem(KEYS.todosSeeded, '1');
     localStorage.setItem(KEYS.plannerSeeded, '1');
+    try {
+      await clearPhotos();
+      for (const p of obj.photos || []) await putPhoto(p);
+    } catch {
+      // 사진 저장소를 쓸 수 없는 환경이면 사진만 건너뜀
+    }
   }
 
-  const backupBtn = $('backupBtn');
-  const backupMenu = $('backupMenu');
-  function toggleBackupMenu(open) {
-    backupMenu.classList.toggle('open', open);
-    backupBtn.setAttribute('aria-expanded', String(open));
+  const settingsBtn = $('settingsBtn');
+  const settingsMenu = $('settingsMenu');
+  function toggleSettingsMenu(open) {
+    settingsMenu.classList.toggle('open', open);
+    settingsBtn.setAttribute('aria-expanded', String(open));
     // 좁은 화면에서 버튼이 왼쪽에 있으면 메뉴가 화면 밖으로 나가지 않도록 왼쪽 정렬
-    backupMenu.classList.remove('align-left');
-    if (open && backupMenu.getBoundingClientRect().left < 8) backupMenu.classList.add('align-left');
+    settingsMenu.classList.remove('align-left');
+    if (open && settingsMenu.getBoundingClientRect().left < 8) settingsMenu.classList.add('align-left');
   }
-  backupBtn.addEventListener('click', () => toggleBackupMenu(!backupMenu.classList.contains('open')));
+  settingsBtn.addEventListener('click', () => toggleSettingsMenu(!settingsMenu.classList.contains('open')));
   document.addEventListener('click', e => {
-    if (!e.target.closest('.menu-wrap')) toggleBackupMenu(false);
+    if (!e.target.closest('.menu-wrap')) toggleSettingsMenu(false);
   });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') toggleBackupMenu(false);
+    if (e.key === 'Escape') toggleSettingsMenu(false);
   });
-  $('exportBtn').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(backupPayload(), null, 2)], { type: 'application/json' });
+  $('exportBtn').addEventListener('click', async () => {
+    toggleSettingsMenu(false);
+    const blob = new Blob([JSON.stringify(await backupPayload(), null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = `planner-backup-${todayKey}.json`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    toggleBackupMenu(false);
   });
   $('importBtn').addEventListener('click', () => {
-    toggleBackupMenu(false);
+    toggleSettingsMenu(false);
     $('importFile').click();
   });
   $('importFile').addEventListener('change', async e => {
@@ -1509,8 +1975,557 @@
       return;
     }
     if (!confirm('지금 데이터를 백업 파일 내용으로 덮어쓸까요?')) return;
-    restoreBackup(obj);
+    await restoreBackup(obj);
     location.reload();
+  });
+
+  // ---------- 사진 (DIARY 아래) ----------
+  let photosReady = false; // IndexedDB를 쓸 수 있을 때만 사진 칸을 보여 줌
+  let photoView = null; // 크게 보고 있는 사진
+  let photoRender = 0; // 마지막으로 요청한 그리기만 반영하기 위한 번호
+  async function renderPhotos() {
+    if (!photosReady) return;
+    const ticket = ++photoRender;
+    let recs = [];
+    try {
+      recs = await photosOn(selectedKey);
+    } catch {
+      return;
+    }
+    if (ticket !== photoRender) return; // 그사이 더 새로운 그리기 요청(날짜 이동·추가·삭제)이 있었으면 무시
+    recs.sort((a, b) => a.createdAt - b.createdAt);
+    const box = $('photos');
+    box.querySelectorAll('.photo-thumb').forEach(n => n.remove());
+    recs.forEach(rec => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'photo-thumb';
+      b.title = '크게 보기';
+      const img = document.createElement('img');
+      img.src = rec.data;
+      img.alt = `${formatKey(rec.date)} 사진`;
+      b.append(img);
+      b.addEventListener('click', () => openPhoto(rec));
+      box.insertBefore(b, $('photoAdd'));
+    });
+    $('photoAdd').hidden = recs.length >= MAX_PHOTOS;
+  }
+  $('photoAdd').addEventListener('click', () => $('photoFile').click());
+  $('photoFile').addEventListener('change', async e => {
+    const files = [...e.target.files].filter(f => f.type.startsWith('image/'));
+    e.target.value = '';
+    if (!files.length) return;
+    const key = selectedKey;
+    const room = MAX_PHOTOS - (await photosOn(key)).length;
+    if (files.length > room) alert(`하루에 사진은 ${MAX_PHOTOS}장까지 넣을 수 있어요.`);
+    for (const f of files.slice(0, Math.max(0, room))) {
+      try {
+        const data = await compressImage(f);
+        const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        await putPhoto({ id, date: key, data, createdAt: Date.now() });
+      } catch (err) {
+        alert(err && err.name === 'QuotaExceededError' ? '저장 공간이 부족해요.' : '사진을 불러오지 못했어요.');
+        break;
+      }
+    }
+    renderPhotos();
+  });
+  function openPhoto(rec) {
+    photoView = rec;
+    $('photoBig').src = rec.data;
+    $('photoBig').alt = `${formatKey(rec.date)} 사진`;
+    $('photoTitle').textContent = `${formatKey(rec.date)} 사진`;
+    $('photoDlg').showModal();
+  }
+  $('photoClose').addEventListener('click', () => $('photoDlg').close());
+  $('photoDelete').addEventListener('click', async () => {
+    const rec = photoView;
+    $('photoDlg').close();
+    if (!rec) return;
+    await deletePhoto(rec.id);
+    renderPhotos();
+    showUndo('사진을 삭제했어요', () => {
+      putPhoto(rec).then(renderPhotos);
+    });
+  });
+  // 대화상자 바깥(배경)을 누르면 닫기
+  [$('photoDlg'), $('reviewDlg')].forEach(dlg => dlg.addEventListener('click', e => {
+    if (e.target === dlg) dlg.close();
+  }));
+
+  // ---------- 회고: 연간 기분 · 주간 · 월간 ----------
+  let reviewTab = 'year';
+  let reviewYear = null; // 연간 기분에서 보는 해
+  let reviewAnchor = null; // 주간·월간에서 보는 날짜 (그 주 / 그 달)
+  const pxTip = $('pxTip');
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function navRow(label, onPrev, onNext) {
+    const row = el('div', 'rv-nav');
+    const prev = el('button', 'icon-btn', '‹');
+    prev.type = 'button';
+    prev.title = '이전';
+    prev.addEventListener('click', onPrev);
+    const next = el('button', 'icon-btn', '›');
+    next.type = 'button';
+    next.title = '다음';
+    next.addEventListener('click', onNext);
+    row.append(prev, el('span', '', label), next);
+    return row;
+  }
+  function tile(k, v, s) {
+    const t = el('div', 'tile');
+    t.append(el('div', 'k', k), el('div', 'v', v));
+    if (s) t.append(el('div', 's', s));
+    return t;
+  }
+  function moodLegend() {
+    const lg = el('div', 'mood-legend');
+    MOODS.forEach(m => {
+      const s = el('span');
+      const i = el('i');
+      i.dataset.m = m.v;
+      s.append(i, `${m.emoji} ${m.label}`);
+      lg.append(s);
+    });
+    const none = el('span');
+    none.append(el('i'), '기록 없음');
+    lg.append(none);
+    return lg;
+  }
+  function avgMood(keys) {
+    const ms = keys.map(k => dayData(k).mood).filter(Boolean);
+    return ms.length ? ms.reduce((a, b) => a + b, 0) / ms.length : 0;
+  }
+  const moodText = avg => (avg ? `${moodEmoji(Math.round(avg))} ${avg.toFixed(1)}` : '–');
+  const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '–');
+  function monthKeys(y, m) {
+    const last = new Date(y, m + 1, 0).getDate();
+    return Array.from({ length: last }, (_, i) => toKey(new Date(y, m, i + 1)));
+  }
+  // 월요일 시작 주
+  function weekStart(key) {
+    return shiftKey(key, -((fromKey(key).getDay() + 6) % 7));
+  }
+  function jumpTo(key) {
+    $('reviewDlg').close();
+    selectDate(key);
+  }
+
+  function showPxTip(cell, key) {
+    const d = dayData(key);
+    pxTip.innerHTML = '';
+    pxTip.append(el('strong', '', `${formatKey(key)} ${moodEmoji(d.mood)}`.trim()));
+    pxTip.append(el('div', d.mood ? '' : 'muted', d.mood ? `기분: ${moodLabel(d.mood)}` : '기분 기록 없음'));
+    const text = d.diary.trim().replace(/\s+/g, ' ');
+    if (text) pxTip.append(el('div', 'sep', text.length > 50 ? text.slice(0, 50) + '…' : text));
+    pxTip.style.display = 'block';
+    const rect = cell.getBoundingClientRect();
+    const tip = pxTip.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - tip.width / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tip.width - 8));
+    let top = rect.bottom + 8;
+    if (top + tip.height > window.innerHeight - 8) top = rect.top - tip.height - 8;
+    pxTip.style.left = left + 'px';
+    pxTip.style.top = top + 'px';
+  }
+  function hidePxTip() {
+    pxTip.style.display = 'none';
+  }
+
+  $('reviewBtn').addEventListener('click', () => {
+    reviewYear = fromKey(selectedKey).getFullYear();
+    reviewAnchor = selectedKey;
+    $('reviewDlg').showModal();
+    renderReview();
+  });
+  $('reviewClose').addEventListener('click', () => $('reviewDlg').close());
+  $('reviewDlg').addEventListener('close', hidePxTip);
+  $('reviewDlg').querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+    reviewTab = t.dataset.tab;
+    renderReview();
+  }));
+
+  function renderReview() {
+    $('reviewDlg').querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === reviewTab)));
+    const body = $('reviewBody');
+    body.innerHTML = '';
+    hidePxTip();
+    if (reviewTab === 'year') renderYear(body);
+    else renderPeriod(body, reviewTab);
+  }
+
+  // 연간 기분: 가로 12개월 × 세로 31일, 칸 색 = 그날 기분
+  function renderYear(body) {
+    const y = reviewYear;
+    body.append(navRow(`${y}년`, () => { reviewYear--; renderReview(); }, () => { reviewYear++; renderReview(); }));
+    const wrap = el('div', 'year-wrap');
+
+    const left = el('div');
+    const grid = el('div', 'pixels');
+    grid.setAttribute('aria-label', `${y}년 날짜별 기분`);
+    grid.append(el('span', 'px-h', ''));
+    for (let m = 1; m <= 12; m++) grid.append(el('span', 'px-h', String(m)));
+    for (let d = 1; d <= 31; d++) {
+      grid.append(el('span', 'px-h', String(d)));
+      for (let m = 0; m < 12; m++) {
+        const b = el('button', 'px');
+        b.type = 'button';
+        const date = new Date(y, m, d);
+        if (date.getMonth() !== m) {
+          // 없는 날 (예: 2월 30일)
+          b.classList.add('void');
+          b.tabIndex = -1;
+          b.setAttribute('aria-hidden', 'true');
+          grid.append(b);
+          continue;
+        }
+        const key = toKey(date);
+        const mood = dayData(key).mood;
+        if (mood) b.dataset.m = mood;
+        if (key === todayKey) b.classList.add('is-today');
+        b.setAttribute('aria-label', `${formatKey(key)} ${mood ? moodLabel(mood) : '기록 없음'}`);
+        b.addEventListener('mouseenter', () => showPxTip(b, key));
+        b.addEventListener('focus', () => showPxTip(b, key));
+        b.addEventListener('mouseleave', hidePxTip);
+        b.addEventListener('blur', hidePxTip);
+        b.addEventListener('click', () => jumpTo(key));
+        grid.append(b);
+      }
+    }
+    left.append(grid, moodLegend());
+
+    const right = el('div');
+    const keys = Array.from({ length: 12 }, (_, m) => monthKeys(y, m)).flat();
+    const tiles = el('div', 'tiles');
+    tiles.append(
+      tile('기분 기록', `${keys.filter(k => dayData(k).mood).length}일`),
+      tile('평균 기분', moodText(avgMood(keys)), '5 = 아주 좋음'),
+      tile('일기 쓴 날', `${keys.filter(k => dayData(k).diary.trim()).length}일`),
+    );
+    right.append(tiles);
+
+    // 월별 요약 표 (색을 못 보는 경우에도 같은 정보를 숫자로)
+    const sec = el('div', 'rv-section');
+    sec.append(el('div', 'label', '월별 요약 · 줄을 누르면 월간 회고'));
+    const scroll = el('div', 'table-scroll');
+    const table = el('table', 'rv-table');
+    const thead = el('thead');
+    const hr = el('tr');
+    [['월', ''], ['기분 기록', 'num'], ['평균 기분', 'num'], ['일기', 'num'], ['할 일 완료', 'num']].forEach(([t, c]) => hr.append(el('th', c, t)));
+    thead.append(hr);
+    const tbody = el('tbody');
+    for (let m = 0; m < 12; m++) {
+      const mk = monthKeys(y, m);
+      const items = mk.flatMap(itemsOn);
+      const tr = el('tr');
+      tr.append(
+        el('td', '', `${m + 1}월`),
+        el('td', 'num', `${mk.filter(k => dayData(k).mood).length}일`),
+        el('td', 'num', moodText(avgMood(mk))),
+        el('td', 'num', `${mk.filter(k => dayData(k).diary.trim()).length}일`),
+        el('td', 'num', pct(items.filter(t => t.done).length, items.length)),
+      );
+      tr.tabIndex = 0;
+      const open = () => {
+        reviewAnchor = toKey(new Date(y, m, 1));
+        reviewTab = 'month';
+        renderReview();
+      };
+      tr.addEventListener('click', open);
+      tr.addEventListener('keydown', e => { if (e.key === 'Enter') open(); });
+      tbody.append(tr);
+    }
+    table.append(thead, tbody);
+    scroll.append(table);
+    sec.append(scroll);
+    right.append(sec);
+
+    wrap.append(left, right);
+    body.append(wrap);
+  }
+
+  // 주간 · 월간 회고
+  function renderPeriod(body, tab) {
+    const a = fromKey(reviewAnchor);
+    const keys = tab === 'week'
+      ? Array.from({ length: 7 }, (_, i) => shiftKey(weekStart(reviewAnchor), i))
+      : monthKeys(a.getFullYear(), a.getMonth());
+    const f = fromKey(keys[0]);
+    const l = fromKey(keys[keys.length - 1]);
+    const label = tab === 'week'
+      ? `${f.getFullYear()}. ${f.getMonth() + 1}/${f.getDate()} ~ ${l.getMonth() + 1}/${l.getDate()}`
+      : `${f.getFullYear()}년 ${f.getMonth() + 1}월`;
+    const step = n => {
+      if (tab === 'week') reviewAnchor = shiftKey(weekStart(reviewAnchor), 7 * n);
+      else reviewAnchor = toKey(new Date(a.getFullYear(), a.getMonth() + n, 1));
+      renderReview();
+    };
+    body.append(navRow(label, () => step(-1), () => step(1)));
+
+    const once = keys.flatMap(todosOn);
+    const reps = keys.flatMap(k => routinesOn(k).map(r => Boolean(r.done[k])));
+    const onceDone = once.filter(t => t.done).length;
+    const repDone = reps.filter(Boolean).length;
+    const minutes = keys.reduce((sum, k) => sum + minutesOn(k), 0);
+    const diaryDays = keys.filter(k => dayData(k).diary.trim()).length;
+    const tiles = el('div', 'tiles');
+    tiles.append(
+      tile('할 일 완료', pct(onceDone, once.length), `${onceDone} / ${once.length}개`),
+      tile('반복 할 일', pct(repDone, reps.length), `${repDone} / ${reps.length}번`),
+      tile('기록 시간', formatMinutes(minutes), `하루 평균 ${formatMinutes(Math.round(minutes / keys.length / 10) * 10)}`),
+      tile('일기 쓴 날', `${diaryDays}일`, `${keys.length}일 중`),
+      tile('평균 기분', moodText(avgMood(keys)), '5 = 아주 좋음'),
+    );
+    body.append(tiles);
+
+    const sec = el('div', 'rv-section');
+    if (tab === 'week') {
+      // 날짜별 표: 줄을 누르면 그 날짜로 이동
+      sec.append(el('div', 'label', '날짜별 · 줄을 누르면 그 날로 이동'));
+      const scroll = el('div', 'table-scroll');
+      const table = el('table', 'rv-table');
+      const thead = el('thead');
+      const hr = el('tr');
+      [['날짜', ''], ['기분', ''], ['할 일', 'num'], ['기록 시간', 'num'], ['일기', '']].forEach(([t, c]) => hr.append(el('th', c, t)));
+      thead.append(hr);
+      const tbody = el('tbody');
+      keys.forEach(k => {
+        const d = dayData(k);
+        const items = itemsOn(k);
+        const tr = el('tr');
+        tr.append(
+          el('td', '', formatKey(k)),
+          el('td', '', d.mood ? `${moodEmoji(d.mood)} ${moodLabel(d.mood)}` : '–'),
+          el('td', 'num', items.length ? `${items.filter(t => t.done).length}/${items.length}` : '–'),
+          el('td', 'num', minutesOn(k) ? formatMinutes(minutesOn(k)) : '–'),
+          el('td', '', d.diary.trim() ? '✓' : ''),
+        );
+        tr.tabIndex = 0;
+        tr.addEventListener('click', () => jumpTo(k));
+        tr.addEventListener('keydown', e => { if (e.key === 'Enter') jumpTo(k); });
+        tbody.append(tr);
+      });
+      table.append(thead, tbody);
+      scroll.append(table);
+      sec.append(scroll);
+    } else {
+      // 기분 분포: 막대 길이 = 그 기분이었던 날 수
+      sec.append(el('div', 'label', '기분 분포'));
+      const counts = MOODS.map(m => keys.filter(k => dayData(k).mood === m.v).length);
+      const max = Math.max(1, ...counts);
+      const dist = el('div', 'dist');
+      dist.style.marginTop = '8px';
+      MOODS.forEach((m, i) => {
+        const track = el('div', 'dist-track');
+        const bar = el('div', 'dist-bar');
+        bar.dataset.m = m.v;
+        bar.style.width = counts[i] ? `${(counts[i] / max) * 100}%` : '0';
+        track.append(bar);
+        dist.append(el('span', '', `${m.emoji} ${m.label}`), track, el('span', 'num', `${counts[i]}일`));
+      });
+      sec.append(dist);
+    }
+    body.append(sec);
+
+    // 회고 질문 (입력할 때마다 저장)
+    const id = tab === 'week' ? `W${weekStart(reviewAnchor)}` : `M${reviewAnchor.slice(0, 7)}`;
+    const qs = el('div', 'rv-section rv-q');
+    qs.append(el('div', 'label', tab === 'week' ? '이번 주 돌아보기' : '이번 달 돌아보기'));
+    [['good', '잘한 점'], ['bad', '아쉬운 점'], ['next', tab === 'week' ? '다음 주 목표' : '다음 달 목표']].forEach(([k, t]) => {
+      const lab = el('label', '', t);
+      const ta = el('textarea', 'field');
+      ta.value = (reviews[id] || {})[k] || '';
+      ta.addEventListener('input', () => {
+        const next = { ...(reviews[id] || {}), [k]: ta.value };
+        if (Object.values(next).some(v => v.trim())) reviews[id] = next;
+        else delete reviews[id];
+        saveReviews();
+      });
+      lab.append(ta);
+      qs.append(lab);
+    });
+    body.append(qs);
+  }
+
+  // ---------- PIN 잠금 ----------
+  // 화면을 가리는 기능이며 데이터를 암호화하지는 않음
+  const canLock = Boolean(window.crypto && crypto.subtle);
+  let lockState = { mode: null, pin: '', first: '', fails: 0, until: 0 };
+  const LOCK_TEXT = {
+    unlock: ['PIN을 입력하세요', 'TEN MINUTE PLANNER'],
+    set1: ['새 PIN 4자리를 입력하세요', '앱을 열 때 입력할 숫자예요'],
+    set2: ['한 번 더 입력하세요', '확인을 위해 같은 PIN을 입력하세요'],
+    change: ['지금 PIN을 입력하세요', '맞으면 새 PIN을 정해요'],
+    off: ['지금 PIN을 입력하세요', '맞으면 잠금을 꺼요'],
+  };
+  const toHex = bytes => [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+  async function hashPin(pin, salt) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(`${salt}:${pin}`));
+    return toHex(new Uint8Array(buf));
+  }
+  const lockInfo = () => loadJSON(KEYS.lock, null);
+
+  function openLock(mode) {
+    lockState = { ...lockState, mode, pin: '', first: mode === 'set2' ? lockState.first : '' };
+    const [title, sub] = LOCK_TEXT[mode];
+    $('lockTitle').textContent = title;
+    $('lockSub').textContent = sub;
+    $('lockMsg').textContent = '';
+    $('lockCancel').hidden = mode === 'unlock';
+    $('lockForgot').hidden = mode !== 'unlock';
+    $('lockScreen').classList.add('show');
+    drawDots();
+  }
+  function closeLock() {
+    $('lockScreen').classList.remove('show');
+    document.documentElement.classList.remove('locked');
+    lockState.mode = null;
+    lockState.pin = '';
+  }
+  function drawDots() {
+    $('pinDots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < lockState.pin.length));
+  }
+  function lockError(msg) {
+    $('lockMsg').textContent = msg;
+    const dots = $('pinDots');
+    dots.classList.remove('shake');
+    void dots.offsetWidth; // 애니메이션 다시 시작
+    dots.classList.add('shake');
+    lockState.pin = '';
+    drawDots();
+  }
+  function setKeysDisabled(off) {
+    $('keypad').querySelectorAll('.key').forEach(k => { k.disabled = off; });
+  }
+  function updateLockMenu() {
+    const on = Boolean(lockInfo());
+    $('lockSetBtn').hidden = !canLock;
+    $('lockSetBtn').textContent = on ? 'PIN 변경' : 'PIN 잠금 설정';
+    $('lockNowBtn').hidden = !canLock || !on;
+    $('lockOffBtn').hidden = !canLock || !on;
+  }
+  async function pressDigit(digit) {
+    if (!lockState.mode || Date.now() < lockState.until || lockState.pin.length >= 4) return;
+    lockState.pin += digit;
+    drawDots();
+    if (lockState.pin.length < 4) return;
+    const { pin, mode } = lockState;
+
+    if (mode === 'set1') {
+      lockState.first = pin;
+      openLock('set2');
+      return;
+    }
+    if (mode === 'set2') {
+      if (pin !== lockState.first) {
+        openLock('set1');
+        lockError('두 PIN이 달라요. 처음부터 다시 입력하세요.');
+        return;
+      }
+      const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+      localStorage.setItem(KEYS.lock, JSON.stringify({ salt, hash: await hashPin(pin, salt) }));
+      closeLock();
+      updateLockMenu();
+      showUndo('PIN 잠금을 켰어요', null);
+      return;
+    }
+
+    // unlock / change / off: 지금 PIN 확인
+    const info = lockInfo();
+    const ok = info && (await hashPin(pin, info.salt)) === info.hash;
+    if (!ok) {
+      lockState.fails++;
+      if (lockState.fails >= 5) {
+        lockState.fails = 0;
+        lockState.until = Date.now() + 30000;
+        lockError('5번 틀렸어요. 30초 뒤에 다시 시도하세요.');
+        setKeysDisabled(true);
+        setTimeout(() => {
+          setKeysDisabled(false);
+          $('lockMsg').textContent = '';
+        }, 30000);
+      } else {
+        lockError(`PIN이 맞지 않아요. (${lockState.fails}/5)`);
+      }
+      return;
+    }
+    lockState.fails = 0;
+    if (mode === 'change') {
+      openLock('set1');
+      return;
+    }
+    if (mode === 'off') {
+      localStorage.removeItem(KEYS.lock);
+      closeLock();
+      updateLockMenu();
+      showUndo('PIN 잠금을 껐어요', null);
+      return;
+    }
+    closeLock();
+  }
+  function backspacePin() {
+    lockState.pin = lockState.pin.slice(0, -1);
+    drawDots();
+  }
+  $('keypad').addEventListener('click', e => {
+    const k = e.target.closest('.key');
+    if (!k) return;
+    if (k.hasAttribute('data-back')) backspacePin();
+    else pressDigit(k.textContent);
+  });
+  // 잠금 화면이 떠 있는 동안 키 입력은 PIN에만 쓰임 (날짜 이동 등 막기)
+  document.addEventListener('keydown', e => {
+    if (!lockState.mode || e.key === 'Tab') return;
+    e.stopPropagation();
+    if (/^\d$/.test(e.key)) {
+      e.preventDefault();
+      pressDigit(e.key);
+    } else if (e.key === 'Backspace') {
+      e.preventDefault();
+      backspacePin();
+    } else if (e.key === 'Escape' && lockState.mode !== 'unlock') {
+      closeLock();
+    }
+  }, true);
+  $('lockCancel').addEventListener('click', closeLock);
+  $('lockForgot').addEventListener('click', async () => {
+    if (!confirm('PIN을 되찾을 방법은 없어요. 잠금을 풀려면 이 기기의 플래너 데이터를 모두 지워야 해요.\n백업 파일이 있다면 나중에 가져올 수 있어요. 모두 지울까요?')) return;
+    Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+    try {
+      await clearPhotos();
+    } catch {
+      // 사진 저장소가 없으면 건너뜀
+    }
+    location.reload();
+  });
+  $('lockSetBtn').addEventListener('click', () => {
+    toggleSettingsMenu(false);
+    openLock(lockInfo() ? 'change' : 'set1');
+  });
+  $('lockNowBtn').addEventListener('click', () => {
+    toggleSettingsMenu(false);
+    document.documentElement.classList.add('locked');
+    openLock('unlock');
+  });
+  $('lockOffBtn').addEventListener('click', () => {
+    toggleSettingsMenu(false);
+    openLock('off');
+  });
+  // 다른 탭·앱에 5분 넘게 가 있다가 돌아오면 다시 잠금
+  let hiddenAt = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      hiddenAt = Date.now();
+    } else if (canLock && lockInfo() && hiddenAt && Date.now() - hiddenAt > 5 * 60 * 1000 && lockState.mode !== 'unlock') {
+      document.documentElement.classList.add('locked');
+      openLock('unlock');
+    }
   });
 
   // ---------- 자정이 지나면 '오늘' 갱신 ----------
@@ -1535,15 +2550,50 @@
     const text = input.value.trim();
     if (!text) return;
     const date = dateInput.value || selectedKey;
-    const todo = { id: Date.now(), text, done: false, date };
-    if (dueInput.value) todo.due = dueInput.value;
-    if (newCat) todo.cat = newCat;
-    todos.push(todo);
+    if (newRepeat.size) {
+      // 반복 요일을 골랐으면 반복 할 일로 추가 (날짜 = 시작일, 마감일은 쓰지 않음)
+      const r = { id: Date.now(), text, days: [...newRepeat].sort(), start: date, done: {} };
+      if (newCat) r.cat = newCat;
+      routines.push(r);
+      saveRoutines();
+      setRepeat([]);
+    } else {
+      const todo = { id: Date.now(), text, done: false, date };
+      if (dueInput.value) todo.due = dueInput.value;
+      if (newCat) todo.cat = newCat;
+      todos.push(todo);
+      saveTodos();
+    }
     input.value = '';
     dueInput.value = '';
-    saveTodos();
     selectDate(date);
     input.focus();
+  });
+
+  // 반복 요일 선택 (아무것도 안 고르면 한 번만 하는 할 일)
+  let newRepeat = new Set();
+  function setRepeat(dayList) {
+    newRepeat = new Set(dayList);
+    $('repeatPick').querySelectorAll('[data-day]').forEach(b => {
+      b.setAttribute('aria-pressed', String(newRepeat.has(Number(b.dataset.day))));
+    });
+    $('repeatPick').querySelector('[data-all]').setAttribute('aria-pressed', String(newRepeat.size === 7));
+    // 반복 할 일에는 마감일을 쓰지 않음
+    dueInput.disabled = newRepeat.size > 0;
+    if (dueInput.disabled) dueInput.value = '';
+  }
+  $('repeatPick').addEventListener('click', e => {
+    const b = e.target.closest('.day-tog');
+    if (!b) return;
+    if (b.hasAttribute('data-all')) {
+      setRepeat(newRepeat.size === 7 ? [] : [0, 1, 2, 3, 4, 5, 6]);
+      return;
+    }
+    const d = Number(b.dataset.day);
+    const next = new Set(newRepeat);
+    if (next.has(d)) next.delete(d);
+    else next.add(d);
+    setRepeat([...next]);
   });
 
   // 날짜 입력 시 달력이 해당 날짜로 이동
@@ -1623,6 +2673,7 @@
   // 입력 중이 아닐 때 ← → 로 날짜 이동
   document.addEventListener('keydown', e => {
     if (e.target.closest('input, textarea, select')) return;
+    if (document.querySelector('dialog[open]')) return; // 회고·사진 창이 열려 있으면 날짜 이동 안 함
     if (e.key === 'ArrowLeft') selectDate(shiftKey(selectedKey, -1));
     if (e.key === 'ArrowRight') selectDate(shiftKey(selectedKey, 1));
   });
@@ -1709,6 +2760,25 @@
     $('ddayDate').value = dday.date;
   }
   selectDate(todayKey);
+
+  // 사진: IndexedDB를 쓸 수 있으면 사진 칸 보이기
+  photoDb().then(() => {
+    photosReady = true;
+    $('photos').hidden = false;
+    renderPhotos();
+  }).catch(() => {});
+
+  // PIN 잠금
+  updateLockMenu();
+  if (document.documentElement.classList.contains('locked')) {
+    if (canLock) openLock('unlock');
+    else document.documentElement.classList.remove('locked'); // 확인할 방법이 없으면 잠그지 않음
+  }
+
+  // 오프라인 사용 · 홈 화면 설치 (http/https로 열었을 때만)
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 </script>
 </body>
 </html>
