@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자기소개 · TEN MINUTE PLANNER</title>
+<style>
+  /* 플래너(index.html)와 같은 색상 토큰을 사용해 두 페이지의 톤을 맞춤 */
+  :root {
+    --bg: #f3f2ef;
+    --paper: #ffffff;
+    --ink: #2b2b2b;
+    --sub: #8a8a8a;
+    --line: #e7e5e0;
+    --line-strong: #cfccc5;
+    --accent: #3d5a80;
+    --accent-soft: #eaf0f7;
+    --c1: #8fd3b6;
+    --c2: #f6b3c2;
+    --c3: #f7d77c;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --bg: #17181b;
+    --paper: #212226;
+    --ink: #e4e2dd;
+    --sub: #9a988f;
+    --line: #2f3035;
+    --line-strong: #44454b;
+    --accent: #5b7fae;
+    --accent-soft: #2a3342;
+    --c1: #6fae95;
+    --c2: #c98e9c;
+    --c3: #c9ae64;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    font-family: -apple-system, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    color: var(--ink);
+    line-height: 1.6;
+  }
+  body, .card, .btn { transition: background-color .2s, color .2s, border-color .2s; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+
+  /* 상단 바 */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding-top: 20px;
+  }
+  .logo { font-size: 15px; font-weight: 800; letter-spacing: 0.18em; }
+  .top-actions { display: flex; gap: 6px; }
+  .btn {
+    display: inline-block;
+    border: 1px solid var(--line-strong);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--accent-soft); }
+  .btn:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* 상단: 이름 소개 */
+  .hero { text-align: center; padding: 56px 0 40px; }
+  .avatar {
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-size: 38px;
+    font-weight: 700;
+  }
+  .hero h1 { margin: 0; font-size: 32px; letter-spacing: -0.01em; }
+  .hero .role { margin: 4px 0 16px; color: var(--accent); font-weight: 600; }
+  .hero .intro { max-width: 520px; margin: 0 auto; color: var(--sub); }
+
+  /* 중간: 관심사 카드 */
+  .section-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--sub);
+    margin: 0 0 14px;
+  }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px 20px;
+    border-top: 4px solid var(--tint);
+  }
+  .card .icon { font-size: 28px; line-height: 1; }
+  .card h3 { margin: 12px 0 6px; font-size: 17px; }
+  .card p { margin: 0; font-size: 14px; color: var(--sub); }
+
+  /* 하단: 연락처 */
+  .contact {
+    margin: 48px 0 0;
+    padding: 28px 0 40px;
+    border-top: 1px solid var(--line);
+  }
+  .contact ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .contact a { color: var(--accent); }
+  .contact .label { color: var(--sub); font-size: 13px; margin-right: 6px; }
+  .contact li {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+  .copy { margin-top: 24px; font-size: 12px; color: var(--sub); }
+
+  @media (max-width: 720px) {
+    .cards { grid-template-columns: 1fr; }
+    .hero { padding: 40px 0 28px; }
+    .hero h1 { font-size: 26px; }
+    .logo { font-size: 13px; letter-spacing: 0.12em; }
+  }
+</style>
+<script>
+  // 플래너와 같은 테마 저장값(planner_theme)을 공유해 페이지를 오가도 테마가 유지됨
+  (() => {
+    const saved = localStorage.getItem('planner_theme');
+    const dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    if (dark) document.documentElement.dataset.theme = 'dark';
+  })();
+</script>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="logo">ABOUT ME</div>
+      <nav class="top-actions">
+        <button class="btn" id="themeBtn" type="button"></button>
+        <a class="btn" href="index.html">← 플래너로 가기</a>
+      </nav>
+    </header>
+
+    <main>
+      <!-- 상단: 이름 소개 -->
+      <section class="hero">
+        <div class="avatar" aria-hidden="true">홍</div>
+        <h1>홍길동</h1>
+        <p class="role">AI 활용 웹 개발 학습자</p>
+        <p class="intro">
+          AI와 함께 작은 웹 앱을 하나씩 만들어 보고 있습니다.
+          1주차에는 10분 단위로 하루를 기록하는 플래너를 만들었어요.
+        </p>
+      </section>
+
+      <!-- 중간: 관심사 카드 3개 -->
+      <section aria-labelledby="interestTitle">
+        <h2 class="section-title" id="interestTitle">관심사</h2>
+        <div class="cards">
+          <article class="card" style="--tint: var(--c1)">
+            <div class="icon" aria-hidden="true">🤖</div>
+            <h3>AI 도구 활용</h3>
+            <p>생성형 AI로 아이디어를 빠르게 코드로 옮기는 방법을 익히고 있어요.</p>
+          </article>
+          <article class="card" style="--tint: var(--c2)">
+            <div class="icon" aria-hidden="true">🎨</div>
+            <h3>웹 디자인</h3>
+            <p>깔끔한 UI, 다크 모드, 모바일 화면까지 신경 쓰는 디자인을 좋아해요.</p>
+          </article>
+          <article class="card" style="--tint: var(--c3)">
+            <div class="icon" aria-hidden="true">⏱️</div>
+            <h3>시간 관리</h3>
+            <p>하루를 10분 단위로 기록하며 습관과 집중력을 관리하고 있어요.</p>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <!-- 하단: 연락처 -->
+    <footer class="contact" aria-labelledby="contactTitle">
+      <h2 class="section-title" id="contactTitle">연락처</h2>
+      <ul>
+        <li><span class="label">이메일</span><a href="mailto:example@email.com">example@email.com</a></li>
+        <li><span class="label">GitHub</span><a href="https://github.com/" target="_blank" rel="noopener noreferrer">github.com/아이디</a></li>
+        <li><span class="label">블로그</span><a href="https://blog.example.com/" target="_blank" rel="noopener noreferrer">blog.example.com</a></li>
+      </ul>
+      <p class="copy">© 2026 홍길동 · <a href="index.html">1주차 프로젝트: TEN MINUTE PLANNER</a></p>
+    </footer>
+  </div>
+
+<script>
+  // 다크 모드 토글 (플래너와 동일한 저장 키 사용)
+  const themeBtn = document.getElementById('themeBtn');
+  function applyTheme(dark) {
+    if (dark) document.documentElement.dataset.theme = 'dark';
+    else delete document.documentElement.dataset.theme;
+    themeBtn.textContent = dark ? '🌙 다크 모드' : '☀️ 라이트 모드';
+    themeBtn.setAttribute('aria-pressed', String(dark));
+  }
+  themeBtn.addEventListener('click', () => {
+    const dark = document.documentElement.dataset.theme !== 'dark';
+    localStorage.setItem('planner_theme', dark ? 'dark' : 'light');
+    applyTheme(dark);
+  });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+    if (!localStorage.getItem('planner_theme')) applyTheme(e.matches);
+  });
+  applyTheme(document.documentElement.dataset.theme === 'dark');
+</script>
+</body>
+</html>
